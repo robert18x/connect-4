@@ -1,0 +1,9 @@
+.dockerignore
+.devcontainer/devcontainer.json
+**/build
+.vscode
+CMakeUserPresets.json
+Dockerfile
+.gitignore
+.git
+**/.venv
