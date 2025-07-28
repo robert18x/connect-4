@@ -31,9 +31,6 @@
 			}
 		}
 	},
-    "features": {
-        "ghcr.io/devcontainers/features/desktop-lite": "latest"
-    },
     "runArgs": [
         "-e", "DISPLAY",
         "-v", "/tmp/.X11-unix:/tmp/.X11-unix",
