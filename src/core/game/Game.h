@@ -74,10 +74,10 @@ public:
             return fullCover;
         }();
 
-        return (cover ^ fullColumnCover) == 0;
+        return cover == fullColumnCover;
     }
 
-    constexpr bool isValid([[maybe_unused]] Move<Board<cols, rows>> move) noexcept {
+    constexpr bool validate([[maybe_unused]] Move<Board<cols, rows>> move) noexcept {
         return true; // TODO
     }
 
@@ -122,6 +122,10 @@ private:
         //  3) horizontal
         //  4) bottom left to upper right positions
 
+        auto getWinner = [&]{
+            return lastMove.player == Player::player1 ? GameResult::player1_wins : GameResult::player2_wins;
+        };
+
         auto& pos = lastMove.position;
 
         const auto minRow = pos.row >= 3u ? pos.row - 3 : 0u;
@@ -131,7 +135,7 @@ private:
 
         {
             // 1) vertical positions
-            if (minRow - pos.row > 4) {
+            if (pos.row >= 3) {  // start checking from 4th row
                 underlying_type b = board;
                 b >>= minRow * cols.n + pos.col;
                 static constexpr underlying_type tokenMask = 1u;
@@ -140,7 +144,7 @@ private:
                     ((b >> cols.n) & tokenMask) == player and
                     ((b >> (cols.n * 2)) & tokenMask) == player and
                     ((b >> (cols.n * 3)) & tokenMask) == player) {
-                    return lastMove.player == Player::player1 ? GameResult::player1_wins : GameResult::player2_wins;
+                    return getWinner();
                 }
             }
         }
@@ -185,7 +189,7 @@ public:
         if (finished or currentState.isFull())
             throw std::runtime_error("Game is finished!");
 
-        if (not currentState.isValid(move))
+        if (not currentState.validate(move))
             throw std::runtime_error("Invalid move!");
 
         GameResult result = currentState.next(move);
