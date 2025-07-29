@@ -74,12 +74,12 @@ public:
         if (col > cols or row > rows) {
             return std::nullopt;
         }
-        underlying_type columnFill = (cover >> (col * std::bit_width(rows))) & columnCoverMask;
+        underlying_type columnFill = (cover >> (col * singleColumnCoverBits)) & columnCoverMask;
         if (columnFill <= row) {
             return std::nullopt;
         }
         underlying_type positionMask = 1u;
-        auto position = (board >> (row * cols + col)) & positionMask;
+        underlying_type position = (board >> (row * cols + col)) & positionMask;
         if (position == std::to_underlying(Player::player1)) {
             return Player::player1;
         } else {
@@ -194,8 +194,8 @@ private:
     static constexpr size_t singleColumnCoverBits = std::bit_width(rows+1);
     static constexpr size_t columnCoverBits = singleColumnCoverBits * cols;
 
-    static constexpr underlying_type columnCoverMask = [] () consteval {
-        underlying_type mask = 0;
+    static constexpr underlying_type columnCoverMask = [] () {
+        underlying_type mask = 1;
         for (unsigned int i = 0; i < singleColumnCoverBits - 1; ++i) {
             mask <<= 1;
             mask |= 1;
