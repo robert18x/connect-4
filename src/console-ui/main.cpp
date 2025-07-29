@@ -56,23 +56,20 @@ bool toggle(bool& b) {
 Move<Connect4Board> readMove() {
     static bool player1 = true;
     while (true) {
-        std::cout << "(col, row): " << std::flush;
+        std::cout << "column: " << std::flush;
         int col = 0;
-        int row = 0;
-        char c;
-        std::cin >> col >> c >> row;
+        std::cin >> col;
         if (not std::cin.good()) {
             std::cout << "Occured error while reading from stream, try again" << std::endl;
             std::cin.clear();
             std::string ignore;
             std::getline(std::cin, ignore);
-        } else if (col < 1 or std::cmp_greater(col, Connect4Board::cols) or row < 1 or std::cmp_greater(row, Connect4Board::rows)) {
-            std::println("Invalid move! cols range: [1, {}], rows range: [1, {}]", Connect4Board::cols, Connect4Board::rows);
+        } else if (col < 1 or std::cmp_greater(col, Connect4Board::cols)) {
+            std::println("Invalid move! Columns range: [1, {}]", Connect4Board::cols);
         } else {
             return Move<Connect4Board>{
                 .position = Connect4Board::Position{
-                    .col = static_cast<uint8_t>(col-1),
-                    .row = static_cast<uint8_t>(row-1)
+                    .col = static_cast<uint8_t>(col-1)
                 },
                 .player = toggle(player1) ? Player::player1 : Player::player2
             };
