@@ -51,12 +51,15 @@ void display(_Board board) {
     }
 }
 
-bool toggle(bool& b) {
-    return !(b = !b);
+void toggle(Player& player) {
+    if (player == Player::player1) {
+        player = Player::player2;
+    } else {
+        player = Player::player1;
+    }
 }
 
-Move<Connect4Board> readMove() {
-    static bool player1 = true;
+Connect4Board::Position readMovePosition() {
     while (true) {
         std::cout << "column: " << std::flush;
         int col = 0;
@@ -69,11 +72,8 @@ Move<Connect4Board> readMove() {
         } else if (col < 1 or std::cmp_greater(col, Connect4Board::cols)) {
             std::println("Invalid move! Columns range: [1, {}]", Connect4Board::cols);
         } else {
-            return Move<Connect4Board>{
-                .position = Connect4Board::Position{
+            return Connect4Board::Position{
                     .col = static_cast<uint8_t>(col-1)
-                },
-                .player = toggle(player1) ? Player::player1 : Player::player2
             };
         }
     }
@@ -88,17 +88,22 @@ void game() {
     display(game.getCurrentState());
 
     GameResult gameResult = GameResult::none;
+    Player player = Player::player1;
 
     while (gameResult == GameResult::none) {
-        Move<Connect4Board> nextMove = readMove();
+        Connect4Board::Position position = readMovePosition();
 
-        auto result = game.makeMove(nextMove);
+        auto result = game.makeMove(Move<Connect4Board>{
+            .position = position,
+            .player = player
+        });
 
         clearConsole();
         display(game.getCurrentState());
 
         if (result.has_value()) {
             gameResult = *result;
+            toggle(player);
         } else {
             std::println("\nError: {}\n", result.error());
         }
