@@ -198,7 +198,7 @@ private:
 
             // * bottom right
             if (moveRow > 0) {
-                for (uint8_t c = col+1, r = moveRow-1; c <= maxCol and r >= minRow and tokens <= 4u; --c, ++r) {
+                for (uint8_t c = col+1, r = moveRow-1; c <= maxCol and r >= minRow and tokens <= 4u; ++c, --r) {
                     underlying_type chosenColumnCover = getColumnCover(c);
                     if (chosenColumnCover <= r) {
                         break;
