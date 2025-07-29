@@ -9,6 +9,7 @@ class Connect4Conan(ConanFile):
     description = ""
     settings = "os", "compiler", "build_type", "arch"
     requires = [
+        "fmt/11.2.0",
         "magic_enum/0.9.7",
     ]
     options = {

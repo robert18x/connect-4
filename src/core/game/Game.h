@@ -7,6 +7,7 @@
 #include <optional>
 #include <print>
 #include <stdexcept>
+#include <expected>
 #include <bit>
 #include <magic_enum/magic_enum.hpp>
 
@@ -40,7 +41,6 @@ struct Move {
 
 
 enum class GameResult {
-    error = -2,
     none = -1,
     player1_wins,
     player2_wins,
@@ -48,28 +48,62 @@ enum class GameResult {
 };
 
 
-template <Cols cols, Rows rows>
+template <Cols _cols, Rows _rows>
 class Board {
 public:
     explicit constexpr Board() : board(0), cover(0) {}
     constexpr Board(const Board&) = default;
     constexpr Board(Board&&) = default;
 
+    static inline constexpr size_t size = _cols * _rows;
+    static inline constexpr size_t cols = _cols;
+    static inline constexpr size_t rows = _rows;
+
+    using underlying_type = min_unsigned_type<size>;
+    using BoardMove = Move<Board<_cols, _rows>>;
+
     struct Position {
     private:
         template <std::size_t max>
         using uint_type = min_unsigned_type<std::bit_width(max)>;
     public:
-        uint_type<cols.n> col;
-        uint_type<rows.n> row;
+        uint_type<cols> col;
+        uint_type<rows> row;
     };
+
+    constexpr std::optional<Player> checkAt(Cols col, Rows row) const noexcept {
+        if (col > cols or row > rows) {
+            return std::nullopt;
+        }
+
+        static constexpr underlying_type columnMask = [&] () consteval {
+            underlying_type mask = 0;
+            for (unsigned int i = 0; i < singleColumnCoverBits - 1; ++i) {
+                mask <<= 1;
+                mask |= 1;
+            }
+            return mask;
+        }();
+
+        underlying_type columnFill = (cover >> (col * std::bit_width(rows))) & columnMask;
+        if (columnFill <= row) {
+            return std::nullopt;
+        }
+        underlying_type positionMask = 1u;
+        auto position = (board >> (row * cols + col)) & positionMask;
+        if (position == std::to_underlying(Player::player1)) {
+            return Player::player1;
+        } else {
+            return Player::player2;
+        }
+    }
 
     constexpr bool isFull() const noexcept {
         static constexpr underlying_type fullColumnCover = []() consteval {
             underlying_type fullCover = 0;
             for (unsigned int i = 0; i < cols; ++i) {
-                fullCover |= rows.n;
-                fullCover <<= std::bit_width(rows.n);
+                fullCover |= rows + 1;
+                fullCover <<= singleColumnCoverBits;
             }
             return fullCover;
         }();
@@ -77,7 +111,7 @@ public:
         return cover == fullColumnCover;
     }
 
-    constexpr bool validate([[maybe_unused]] Move<Board<cols, rows>> move) noexcept {
+    constexpr bool validate([[maybe_unused]] BoardMove move) noexcept {
         return true; // TODO
     }
 
@@ -86,23 +120,22 @@ public:
         no_validate
     };
 
-    constexpr GameResult next(Move<Board<cols, rows>> move) noexcept {
+    constexpr GameResult next(BoardMove move) noexcept {
         // board modification - adding token position
         underlying_type movePosition = std::to_underlying(move.player) << (move.position.row * cols + move.position.col);
         board |= movePosition;
 
         // cover modification - adjustment of a new token position
-        cover += 1 << (std::bit_width(rows.n) * move.position.col);
+        cover += 1 << (std::bit_width(rows) * move.position.col);
 
         // check result
         return checkGameResult(move);
     }
 
-    static inline constexpr size_t size = cols * rows;
-    using underlying_type = min_unsigned_type<size>;
+
 private:
 
-    constexpr GameResult checkGameResult(const Move<Board<cols, rows>> lastMove) const noexcept {
+    constexpr GameResult checkGameResult(const BoardMove lastMove) const noexcept {
         // Board:
         //   * - to check if exists and if belongs to player
         //   q - current move
@@ -129,21 +162,21 @@ private:
         auto& pos = lastMove.position;
 
         const auto minRow = pos.row >= 3u ? pos.row - 3 : 0u;
-        [[maybe_unused]] const auto maxRow = std::min(pos.row + 3Lu, rows.n);
+        [[maybe_unused]] const auto maxRow = std::min(pos.row + 3Lu, rows);
         [[maybe_unused]] const auto minCol = pos.col >= 3u ? pos.col - 3 : 0u;
-        [[maybe_unused]] const auto maxCol = std::min(pos.col + 3Lu, rows.n);
+        [[maybe_unused]] const auto maxCol = std::min(pos.col + 3Lu, rows);
 
         {
             // 1) vertical positions
             if (pos.row >= 3) {  // start checking from 4th row
                 underlying_type b = board;
-                b >>= minRow * cols.n + pos.col;
+                b >>= minRow * cols + pos.col;
                 static constexpr underlying_type tokenMask = 1u;
                 const auto player = std::to_underlying(lastMove.player);
                 if ((b & tokenMask) == player and
-                    ((b >> cols.n) & tokenMask) == player and
-                    ((b >> (cols.n * 2)) & tokenMask) == player and
-                    ((b >> (cols.n * 3)) & tokenMask) == player) {
+                    ((b >> cols) & tokenMask) == player and
+                    ((b >> (cols * 2)) & tokenMask) == player and
+                    ((b >> (cols * 3)) & tokenMask) == player) {
                     return getWinner();
                 }
             }
@@ -168,8 +201,12 @@ private:
         }
     }
 
+    static constexpr size_t singleColumnCoverBits = std::bit_width(rows+1);
+    static constexpr size_t columnCoverBits = singleColumnCoverBits * cols;
+
+
     underlying_type board : size;
-    underlying_type cover : std::bit_width(rows.n) * cols;
+    underlying_type cover : columnCoverBits;
 };
 
 
@@ -181,16 +218,17 @@ public:
     explicit constexpr Game() = default;
 
     using _Move = Move<_Board>;
+    using Board = _Board;
 
-    constexpr GameResult makeMove(const _Move move) {
+    constexpr std::expected<GameResult, std::string> makeMove(const _Move move) {
         if (lastMove.has_value() and lastMove->player == move.player)
-            throw std::runtime_error(std::format("This is not {} move!", magic_enum::enum_name(move.player)));
+            return std::unexpected(std::format("This is not {} move!", magic_enum::enum_name(move.player)));
 
         if (finished or currentState.isFull())
-            throw std::runtime_error("Game is finished!");
+            return std::unexpected("Game is finished!");
 
         if (not currentState.validate(move))
-            throw std::runtime_error("Invalid move!");
+            return std::unexpected("Invalid move!");
 
         GameResult result = currentState.next(move);
         lastMove = move;
@@ -199,10 +237,13 @@ public:
         return result;
     }
 
+    constexpr Board getCurrentState() const noexcept {
+        return currentState;
+    }
+
 private:
 
     _Board currentState;
     std::optional<_Move> lastMove;
     bool finished = false;
 };
-
