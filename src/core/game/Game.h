@@ -2,14 +2,15 @@
 
 #include "utilities/int_types.h"
 
+#include <magic_enum/magic_enum.hpp>
+
+#include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <print>
 #include <stdexcept>
-#include <expected>
-#include <bit>
-#include <magic_enum/magic_enum.hpp>
 
 struct Rows {
     constexpr explicit Rows(std::size_t n) : n(n) {};

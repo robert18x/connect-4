@@ -1,10 +1,12 @@
 #include "game/Game.h"
+
 #include <fmt/ranges.h>
+
 #include <iostream>
 #include <limits>
 #include <print>
-#include <utility>
 #include <ranges>
+#include <utility>
 
 using Connect4Board = Board<Cols(7), Rows(6)>;
 
