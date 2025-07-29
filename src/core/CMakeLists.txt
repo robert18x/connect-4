@@ -2,6 +2,7 @@ project(core)
 
 add_library(${PROJECT_NAME} INTERFACE
     utilities/int_types.h
+    game/Board.h
     game/Game.h
 )
 
