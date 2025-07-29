@@ -103,15 +103,15 @@ public:
 
     constexpr GameResult next(BoardMove move) noexcept {
         // board modification - adding token position
-        underlying_type chosedColumnCover = getColumnCover(move.position.col);
-        underlying_type movePosition = static_cast<underlying_type>(std::to_underlying(move.player)) << (chosedColumnCover * cols + move.position.col);
+        underlying_type chosenColumnCover = getColumnCover(move.position.col);
+        underlying_type movePosition = static_cast<underlying_type>(std::to_underlying(move.player)) << (chosenColumnCover * cols + move.position.col);
         board |= movePosition;
 
         // cover modification - adjustment of a new token position
         cover += static_cast<underlying_type>(1u) << (singleColumnCoverBits * move.position.col);
 
         // check result
-        return checkGameResult(move, chosedColumnCover);
+        return checkGameResult(move, chosenColumnCover);
     }
 
 
@@ -128,7 +128,7 @@ private:
         return (cover >> (singleColumnCoverBits * col)) & columnCoverMask;
     }
 
-    constexpr GameResult checkGameResult(const BoardMove lastMove, underlying_type chosenRow) const noexcept {
+    constexpr GameResult checkGameResult(const BoardMove lastMove, underlying_type moveRow) const noexcept {
         // Board:
         //   * - to check if exists and if belongs to player
         //   q - current move
@@ -152,20 +152,21 @@ private:
             return lastMove.player == Player::player1 ? GameResult::player1_wins : GameResult::player2_wins;
         };
 
-        auto& pos = lastMove.position;
+        auto& col = lastMove.position.col;
 
-        const auto minRow = chosenRow >= 3u ? chosenRow - 3 : 0u;
-        [[maybe_unused]] const auto maxRow = std::min(chosenRow + 3Lu, rows);
-        [[maybe_unused]] const auto minCol = pos.col >= 3u ? pos.col - 3 : 0u;
-        [[maybe_unused]] const auto maxCol = std::min(pos.col + 3Lu, rows);
+        const auto minRow = moveRow >= 3u ? moveRow - 3 : 0u;
+        [[maybe_unused]] const auto maxRow = std::min(moveRow + 3Lu, rows);
+        [[maybe_unused]] const auto minCol = col >= 3u ? col - 3 : 0u;
+        [[maybe_unused]] const auto maxCol = std::min(col + 3Lu, rows);
+
+        static constexpr underlying_type tokenMask = 1u;
+        const uint8_t player = std::to_underlying(lastMove.player);
 
         {
             // 1) vertical positions
-            if (chosenRow >= 3) {  // start checking from 4th row
+            if (moveRow >= 3) {  // start checking from 4th row
                 underlying_type b = board;
-                b >>= minRow * cols + pos.col;
-                static constexpr underlying_type tokenMask = 1u;
-                const auto player = std::to_underlying(lastMove.player);
+                b >>= minRow * cols + col;
                 if ((b & tokenMask) == player and
                     ((b >> cols) & tokenMask) == player and
                     ((b >> (cols * 2)) & tokenMask) == player and
@@ -177,6 +178,42 @@ private:
 
         {
             // 2) upper left to bottom right positions
+            uint8_t tokens = 1u;
+            // * upper left
+            if (col > 0) {
+                for (uint8_t c = col-1, r = moveRow+1; c >= minCol and r <= maxRow and tokens <= 4u; --c, ++r) {
+                    underlying_type chosenColumnCover = getColumnCover(c);
+                    if (chosenColumnCover <= r) {
+                        break;
+                    }
+                    underlying_type position = (board >> (r * cols + c)) & tokenMask;
+                    if (position == player) {
+                        ++tokens;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            // * bottom right
+            if (moveRow > 0) {
+                for (uint8_t c = col+1, r = moveRow-1; c <= maxCol and r >= minRow and tokens <= 4u; --c, ++r) {
+                    underlying_type chosenColumnCover = getColumnCover(c);
+                    if (chosenColumnCover <= r) {
+                        break;
+                    }
+                    underlying_type position = (board >> (r * cols + c)) & tokenMask;
+                    if (position == player) {
+                        ++tokens;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (tokens == 4) {
+                return getWinner();
+            }
         }
 
         {
@@ -196,7 +233,6 @@ private:
 
     static constexpr size_t singleColumnCoverBits = std::bit_width(rows+1);
     static constexpr size_t columnCoverBits = singleColumnCoverBits * cols;
-
 
     underlying_type board : size;
     underlying_type cover : columnCoverBits;
