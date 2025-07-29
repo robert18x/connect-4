@@ -6,6 +6,7 @@
 
 #include <bit>
 #include <cstddef>
+#include <concepts>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -75,7 +76,7 @@ public:
         if (col > cols or row > rows) {
             return std::nullopt;
         }
-        underlying_type columnFill = (cover >> (col * singleColumnCoverBits)) & columnCoverMask;
+        underlying_type columnFill = getColumnCover(col.n);
         if (columnFill <= row) {
             return std::nullopt;
         }
@@ -101,18 +102,13 @@ public:
         return cover == fullColumnCover;
     }
 
-    constexpr bool validate([[maybe_unused]] BoardMove move) noexcept {
-        return true; // TODO
+    constexpr bool validate(Position position) const noexcept {
+        return position.col < cols and getColumnCover(position.col) < rows;
     }
-
-    enum class Validation {
-        validate,
-        no_validate
-    };
 
     constexpr GameResult next(BoardMove move) noexcept {
         // board modification - adding token position
-        underlying_type chosedColumnCover = (cover >> (singleColumnCoverBits * move.position.col)) & columnCoverMask;
+        underlying_type chosedColumnCover = getColumnCover(move.position.col);
         underlying_type movePosition = static_cast<underlying_type>(std::to_underlying(move.player)) << (chosedColumnCover * cols + move.position.col);
         board |= movePosition;
 
@@ -125,6 +121,17 @@ public:
 
 
 private:
+    constexpr inline underlying_type getColumnCover(std::integral auto col) const noexcept {
+        static constexpr underlying_type columnCoverMask = [] () consteval {
+            underlying_type mask = 1;
+            for (unsigned int i = 0; i < singleColumnCoverBits - 1; ++i) {
+                mask <<= 1;
+                mask |= 1;
+            }
+            return mask;
+        }();
+        return (cover >> (singleColumnCoverBits * col)) & columnCoverMask;
+    }
 
     constexpr GameResult checkGameResult(const BoardMove lastMove, underlying_type chosenRow) const noexcept {
         // Board:
@@ -195,15 +202,6 @@ private:
     static constexpr size_t singleColumnCoverBits = std::bit_width(rows+1);
     static constexpr size_t columnCoverBits = singleColumnCoverBits * cols;
 
-    static constexpr underlying_type columnCoverMask = [] () {
-        underlying_type mask = 1;
-        for (unsigned int i = 0; i < singleColumnCoverBits - 1; ++i) {
-            mask <<= 1;
-            mask |= 1;
-        }
-        return mask;
-    }();
-
 
     underlying_type board : size;
     underlying_type cover : columnCoverBits;
@@ -227,8 +225,8 @@ public:
         if (finished or currentState.isFull())
             return std::unexpected("Game is finished!");
 
-        if (not currentState.validate(move))
-            return std::unexpected("Invalid move!");
+        if (not currentState.validate(move.position))
+            return std::unexpected("Invalid move position!");
 
         GameResult result = currentState.next(move);
         lastMove = move;
