@@ -223,6 +223,41 @@ private:
 
         {
             // 4) bottom left to upper right positions
+            uint8_t tokens = 1u;
+
+            // * bottom left
+            if (moveRow > 0 and col > 0) {
+                for (uint8_t c = col-1, r = moveRow-1; c >= minCol and r >= minRow and tokens <= 4u; --c, --r) {
+                    underlying_type chosenColumnCover = getColumnCover(c);
+                    if (chosenColumnCover <= r) {
+                        break;
+                    }
+                    underlying_type position = (board >> (r * cols + c)) & tokenMask;
+                    if (position == player) {
+                        ++tokens;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            // * upper right
+            for (uint8_t c = col+1, r = moveRow+1; c <= maxCol and r <= maxRow and tokens <= 4u; ++c, ++r) {
+                underlying_type chosenColumnCover = getColumnCover(c);
+                if (chosenColumnCover <= r) {
+                    break;
+                }
+                underlying_type position = (board >> (r * cols + c)) & tokenMask;
+                if (position == player) {
+                    ++tokens;
+                } else {
+                    break;
+                }
+            }
+
+            if (tokens == 4) {
+                return getWinner();
+            }
         }
 
         if (isFull()) {
