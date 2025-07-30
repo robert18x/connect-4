@@ -1,6 +1,11 @@
 #!/usr/bin/bash
 
-rm -rf build && \
+script=$(readlink -f "$0")
+script_dir=$(dirname "$script")
+
+cd "$script_dir" && \
+    cd ..  && \
+    rm -rf build && \
     mkdir -p build && \
     cd build || exit $?
 
