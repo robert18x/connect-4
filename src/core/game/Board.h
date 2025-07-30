@@ -49,7 +49,7 @@ enum class GameResult {
 template <Cols _cols, Rows _rows>
 class Board {
 public:
-    explicit constexpr Board() : board(0), cover(0) {}
+    explicit constexpr Board() = default;
     constexpr Board(const Board&) = default;
     constexpr Board(Board&&) = default;
 
@@ -182,7 +182,7 @@ private:
             uint8_t tokens = 1u;
             // * upper left
             if (col > 0) {
-                for (uint8_t c = col-1, r = moveRow+1; c >= minCol and r <= maxRow and tokens <= 4u; --c, ++r) {
+                for (uint8_t c = col-1, r = moveRow+1; c >= minCol and r <= maxRow and tokens < 4u; --c, ++r) {
                     underlying_type chosenColumnCover = getColumnCover(c);
                     if (chosenColumnCover <= r) {
                         break;
@@ -198,7 +198,7 @@ private:
 
             // * bottom right
             if (moveRow > 0) {
-                for (uint8_t c = col+1, r = moveRow-1; c <= maxCol and r >= minRow and tokens <= 4u; ++c, --r) {
+                for (uint8_t c = col+1, r = moveRow-1; c <= maxCol and r >= minRow and tokens < 4u; ++c, --r) {
                     underlying_type chosenColumnCover = getColumnCover(c);
                     if (chosenColumnCover <= r) {
                         break;
@@ -212,13 +212,48 @@ private:
                 }
             }
 
-            if (tokens == 4) {
+            if (tokens >= 4) {
                 return getWinner();
             }
         }
 
         {
-            // 3) horizontal
+            // 3) horizontal: left to rignt
+            uint8_t tokens = 1u;
+
+            // * left
+            if (col > 0) {
+                for (uint8_t c = col-1; c >= minCol and tokens < 4u; --c) {
+                    underlying_type chosenColumnCover = getColumnCover(c);
+                    if (chosenColumnCover <= moveRow) {
+                        break;
+                    }
+                    underlying_type position = (board >> (moveRow * cols + c)) & tokenMask;
+                    if (position == player) {
+                        ++tokens;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            // * right
+            for (uint8_t c = col+1; c <= maxCol and tokens < 4u; ++c) {
+                underlying_type chosenColumnCover = getColumnCover(c);
+                if (chosenColumnCover <= moveRow) {
+                    break;
+                }
+                underlying_type position = (board >> (moveRow * cols + c)) & tokenMask;
+                if (position == player) {
+                    ++tokens;
+                } else {
+                    break;
+                }
+            }
+
+            if (tokens >= 4) {
+                return getWinner();
+            }
         }
 
         {
@@ -227,7 +262,7 @@ private:
 
             // * bottom left
             if (moveRow > 0 and col > 0) {
-                for (uint8_t c = col-1, r = moveRow-1; c >= minCol and r >= minRow and tokens <= 4u; --c, --r) {
+                for (uint8_t c = col-1, r = moveRow-1; c >= minCol and r >= minRow and tokens < 4u; --c, --r) {
                     underlying_type chosenColumnCover = getColumnCover(c);
                     if (chosenColumnCover <= r) {
                         break;
@@ -242,7 +277,7 @@ private:
             }
 
             // * upper right
-            for (uint8_t c = col+1, r = moveRow+1; c <= maxCol and r <= maxRow and tokens <= 4u; ++c, ++r) {
+            for (uint8_t c = col+1, r = moveRow+1; c <= maxCol and r <= maxRow and tokens < 4u; ++c, ++r) {
                 underlying_type chosenColumnCover = getColumnCover(c);
                 if (chosenColumnCover <= r) {
                     break;
@@ -255,7 +290,7 @@ private:
                 }
             }
 
-            if (tokens == 4) {
+            if (tokens >= 4) {
                 return getWinner();
             }
         }
@@ -270,6 +305,6 @@ private:
     static constexpr size_t singleColumnCoverBits = std::bit_width(rows+1);
     static constexpr size_t columnCoverBits = singleColumnCoverBits * cols;
 
-    underlying_type board : size;
-    underlying_type cover : columnCoverBits;
+    underlying_type board : size = {0};
+    underlying_type cover : columnCoverBits = {0};
 };
