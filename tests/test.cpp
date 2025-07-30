@@ -3,17 +3,16 @@
 
 using Connect4Board = Board<Cols(7), Rows(6)>;
 
+Move<Connect4Board> move(int col, Player player) {
+    return Move<Connect4Board>{
+        .position = Connect4Board::Position{
+            .col = static_cast<uint8_t>(col)
+        },
+        .player = player
+    };
+};
 
 TEST_CASE("Game model test", "[test vertical win]" ) {
-    auto move = [](int col, Player player) {
-        return Move<Connect4Board>{
-            .position = Connect4Board::Position{
-                .col = static_cast<uint8_t>(col)
-            },
-            .player = player
-        };
-    };
-
     Connect4Board board;
 
     REQUIRE(board.next(move(0, Player::player1)) == GameResult::none);
@@ -23,15 +22,6 @@ TEST_CASE("Game model test", "[test vertical win]" ) {
 }
 
 TEST_CASE("Game model test", "[test upper left to bottom right win]" ) {
-    auto move = [](int col, Player player) {
-        return Move<Connect4Board>{
-            .position = Connect4Board::Position{
-                .col = static_cast<uint8_t>(col)
-            },
-            .player = player
-        };
-    };
-
     Connect4Board board;
 
     // o
