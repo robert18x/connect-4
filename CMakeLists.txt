@@ -4,6 +4,7 @@ project(connect-4)
 
 include(cmake/Ipo.cmake)
 include(cmake/CompilerFlags.cmake)
+include(cmake/DeployQt.cmake)
 
 if(NOT CMAKE_BUILD_TYPE)
   message(STATUS "No setting build type was specified. Setting Release build")

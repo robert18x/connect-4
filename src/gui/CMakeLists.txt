@@ -17,3 +17,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 add_ipo(${PROJECT_NAME})
+
+deploy_qt(${PROJECT_NAME})

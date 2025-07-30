@@ -1,9 +1,10 @@
 #include <snitch/snitch.hpp>
 #include "game/Game.h"
 
+using Connect4Board = Board<Cols(7), Rows(6)>;
+
 
 TEST_CASE("Game model test", "[test vertical win]" ) {
-    using Connect4Board = Board<Cols(7), Rows(6)>;
     auto move = [](int col, Player player) {
         return Move<Connect4Board>{
             .position = Connect4Board::Position{
@@ -22,7 +23,6 @@ TEST_CASE("Game model test", "[test vertical win]" ) {
 }
 
 TEST_CASE("Game model test", "[test upper left to bottom right win]" ) {
-    using Connect4Board = Board<Cols(7), Rows(6)>;
     auto move = [](int col, Player player) {
         return Move<Connect4Board>{
             .position = Connect4Board::Position{

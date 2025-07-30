@@ -3,6 +3,7 @@
 #include "utilities/int_types.h"
 
 #include <algorithm>
+#include <bit>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -155,9 +156,9 @@ private:
         auto& col = lastMove.position.col;
 
         const auto minRow = moveRow >= 3u ? moveRow - 3 : 0u;
-        [[maybe_unused]] const auto maxRow = std::min(moveRow + 3Lu, rows);
-        [[maybe_unused]] const auto minCol = col >= 3u ? col - 3 : 0u;
-        [[maybe_unused]] const auto maxCol = std::min(col + 3Lu, rows);
+        const auto maxRow = std::min(moveRow + 3Lu, rows);
+        const auto minCol = col >= 3u ? col - 3 : 0u;
+        const auto maxCol = std::min<size_t>(col + 3Lu, rows);
 
         static constexpr underlying_type tokenMask = 1u;
         const uint8_t player = std::to_underlying(lastMove.player);
