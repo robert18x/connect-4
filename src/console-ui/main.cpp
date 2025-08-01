@@ -1,4 +1,5 @@
 #include "game/Game.h"
+#include "game/Bot.h"
 
 #include <fmt/ranges.h>
 
@@ -8,7 +9,7 @@
 #include <ranges>
 #include <utility>
 
-using Connect4Board = Board<Cols(7), Rows(6)>;
+using Connect4Board = Board<Cols(4), Rows(6)>;
 
 template <typename _Board>
 void display(_Board board) {
@@ -89,16 +90,24 @@ void game() {
 
     GameResult gameResult = GameResult::none;
     Player player = Player::player1;
+    Bot<Connect4Board> bot(Player::player2);
 
     while (gameResult == GameResult::none) {
-        Connect4Board::Position position = readMovePosition();
 
-        auto result = game.makeMove(Move<Connect4Board>{
-            .position = position,
-            .player = player
-        });
+        auto move = [&]() {
+            if (player == Player::player1) {
+                Connect4Board::Position position = readMovePosition();
+                return Move<Connect4Board>{
+                    .position = position,
+                    .player = Player::player1
+                };
+            } else {
+                return bot.negamax(game.getCurrentState());
+            }
+        }();
+        auto result = game.makeMove(move);
 
-        clearConsole();
+        // clearConsole();
         display(game.getCurrentState());
 
         if (result.has_value()) {

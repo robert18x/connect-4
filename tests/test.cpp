@@ -1,7 +1,8 @@
 #include <snitch/snitch.hpp>
 #include "game/Game.h"
+#include "game/Bot.h"
 
-using Connect4Board = Board<Cols(7), Rows(6)>;
+using Connect4Board = Board<Cols(6), Rows(4)>;
 
 Move<Connect4Board> move(int col, Player player) {
     return Move<Connect4Board>{
@@ -41,4 +42,15 @@ TEST_CASE("Game model test", "[test upper left to bottom right win]" ) {
     REQUIRE(board.next(move(2, Player::player1)) == GameResult::none);
 
     REQUIRE(board.next(move(3, Player::player1)) == GameResult::player1_wins);
+}
+
+
+TEST_CASE("Test bot", "[test]" ) {
+    Connect4Board board;
+
+    // Bot<Connect4Board> bot();
+    // auto move = bot.negamax(board, Player::player1);
+
+    // REQUIRE(move.player == Player::player1);
+    // REQUIRE(move.position.col == 3u);
 }

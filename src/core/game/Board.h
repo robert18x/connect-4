@@ -6,6 +6,7 @@
 #include <bit>
 #include <concepts>
 #include <cstddef>
+#include <vector>
 #include <cstdint>
 #include <utility>
 
@@ -38,10 +39,10 @@ struct Move {
 };
 
 
-enum class GameResult {
-    none = -1,
-    player1_wins,
-    player2_wins,
+enum class GameResult : std::uint8_t {
+    player1_wins = std::to_underlying(Player::player1),
+    player2_wins = std::to_underlying(Player::player2),
+    none,
     draw,
 };
 
@@ -65,7 +66,8 @@ public:
         template <std::size_t max>
         using uint_type = min_unsigned_type<std::bit_width(max)>;
     public:
-        uint_type<cols> col;
+        using underlying_type = uint_type<cols>;
+        underlying_type col;
     };
 
     constexpr std::optional<Player> checkAt(Cols col, Rows row) const noexcept {
@@ -85,12 +87,36 @@ public:
         }
     }
 
+    constexpr std::vector<Position> getAvailableMovePositions() const {
+        std::vector<Position> availableMovePositions;
+        underlying_type c = cover;
+        for (typename Position::underlying_type i = 0u; i < cols; ++i) {
+            underlying_type columnCover = c & columnCoverMask;
+            if (columnCover < rows) { // check if not full column
+                availableMovePositions.push_back(Position{.col = i});
+            }
+            c >>= singleColumnCoverBits;
+        }
+        return availableMovePositions;
+    }
+
+    constexpr std::size_t getNumberOfOccupiedTokens() const noexcept {
+        std::size_t nTokens = 0;
+        underlying_type c = cover;
+        while (c) {
+            underlying_type columnCover = c & columnCoverMask;
+            nTokens += columnCover;
+            c >>= singleColumnCoverBits;
+        }
+        return nTokens;
+    }
+
     constexpr bool isFull() const noexcept {
         static constexpr underlying_type fullColumnCover = []() consteval {
-            underlying_type fullCover = 0;
-            for (unsigned int i = 0; i < cols; ++i) {
-                fullCover |= rows + 1;
+            underlying_type fullCover = rows;
+            for (unsigned int i = 1u; i < cols; ++i) {
                 fullCover <<= singleColumnCoverBits;
+                fullCover |= rows;
             }
             return fullCover;
         }();
@@ -118,14 +144,6 @@ public:
 
 private:
     constexpr inline underlying_type getColumnCover(std::integral auto col) const noexcept {
-        static constexpr underlying_type columnCoverMask = [] () consteval {
-            underlying_type mask = 1;
-            for (unsigned int i = 0; i < singleColumnCoverBits - 1; ++i) {
-                mask <<= 1;
-                mask |= 1;
-            }
-            return mask;
-        }();
         return (cover >> (singleColumnCoverBits * col)) & columnCoverMask;
     }
 
@@ -304,6 +322,14 @@ private:
 
     static constexpr size_t singleColumnCoverBits = std::bit_width(rows+1);
     static constexpr size_t columnCoverBits = singleColumnCoverBits * cols;
+    static constexpr underlying_type columnCoverMask = [] () consteval {
+            underlying_type mask = 1;
+            for (unsigned int i = 0; i < singleColumnCoverBits - 1; ++i) {
+                mask <<= 1;
+                mask |= 1;
+            }
+            return mask;
+        }();
 
     underlying_type board : size = {0};
     underlying_type cover : columnCoverBits = {0};
