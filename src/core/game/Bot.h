@@ -3,6 +3,7 @@
 #include "Board.h"
 
 #include <algorithm>
+#include <ranges>
 #include <iostream>
 #include <limits>
 #include <print>
@@ -18,8 +19,19 @@ public:
         int8_t bestScore = std::numeric_limits<int8_t>::min();
         Move bestMove{};
 
-        auto positions = board.getAvailableMovePositions();
-        for (typename _Board::Position nextMovePosition : positions) {
+        const auto positions = board.getAvailableMovePositions();
+
+        const std::size_t nPosAfterSymatrion = [&] {
+            if (board.getNumberOfOccupiedTokens() == 0) 
+                return (positions.size() + 1) / 2;
+            else
+                return positions.size();
+        }();
+        auto searchedPositions = positions
+            | std::views::take(nPosAfterSymatrion)
+            | std::views::reverse;
+
+        for (typename _Board::Position nextMovePosition : searchedPositions) {
             Move nextMove = Move{
                 .position = nextMovePosition,
                 .player = player
