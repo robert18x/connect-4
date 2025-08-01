@@ -2,6 +2,8 @@
 
 #include "utilities/int_types.h"
 
+#include <beman/inplace_vector/inplace_vector.hpp>
+
 #include <algorithm>
 #include <bit>
 #include <concepts>

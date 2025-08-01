@@ -11,6 +11,7 @@ class Connect4Conan(ConanFile):
     requires = [
         "fmt/11.2.0",
         "magic_enum/0.9.7",
+        "inplace_vector/0.1",
     ]
     options = {
         "build_gui": [True, False],
