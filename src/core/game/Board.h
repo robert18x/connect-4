@@ -89,8 +89,8 @@ public:
         }
     }
 
-    constexpr std::vector<Position> getAvailableMovePositions() const {
-        std::vector<Position> availableMovePositions;
+    constexpr beman::inplace_vector<Position, cols> getAvailableMovePositions() const {
+        beman::inplace_vector<Position, cols> availableMovePositions;
         underlying_type c = cover;
         for (typename Position::underlying_type i = 0u; i < cols; ++i) {
             underlying_type columnCover = c & columnCoverMask;
