@@ -8,7 +8,6 @@
 #include <bit>
 #include <concepts>
 #include <cstddef>
-#include <vector>
 #include <cstdint>
 #include <utility>
 
@@ -89,7 +88,7 @@ public:
         }
     }
 
-    constexpr beman::inplace_vector<Position, cols> getAvailableMovePositions() const {
+    constexpr beman::inplace_vector<Position, cols> getAvailableMovePositions() const noexcept {
         beman::inplace_vector<Position, cols> availableMovePositions;
         underlying_type c = cover;
         for (typename Position::underlying_type i = 0u; i < cols; ++i) {

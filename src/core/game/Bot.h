@@ -6,16 +6,20 @@
 #include <ranges>
 #include <iostream>
 #include <limits>
-#include <print>
 
-template <typename _Board>
+enum class MoveOrdering : bool {
+    enabled = true,
+    disabled = false,
+};
+
+template <typename _Board, MoveOrdering moveOrdering = MoveOrdering::disabled>
 class Bot {
 public:
     explicit constexpr Bot(Player player) : player(player), opponent(other(player)) {}
 
     using Move = typename _Board::BoardMove;
 
-    constexpr Move negamax(_Board board) {
+    constexpr Move negamax(_Board board) const noexcept {
         int8_t bestScore = std::numeric_limits<int8_t>::min();
         Move bestMove{};
 
@@ -50,7 +54,7 @@ public:
     }
 
 private:
-    constexpr int8_t negamaxImpl(_Board board, Move currentMove, int8_t depth, int8_t alpha, int8_t beta) {
+    constexpr int8_t negamaxImpl(_Board board, Move currentMove, int8_t depth, int8_t alpha, int8_t beta) const noexcept {
         GameResult gameResult = board.next(currentMove);
 
         if (gameResult == GameResult::draw) {
@@ -64,12 +68,23 @@ private:
         int8_t bestScore = std::numeric_limits<int8_t>::min();
         // [[maybe_unused]] Move bestMove{};
 
-        for (typename _Board::Position nextMovePosition : board.getAvailableMovePositions()) {
-            Move nextMove = Move{
+        const auto availableMovePositions = board.getAvailableMovePositions();
+        const size_t nPos = availableMovePositions.size();
+
+        for (unsigned int i = 0; i < nPos; ++i) {
+            const unsigned int index = [&] {
+                if constexpr (std::to_underlying(moveOrdering)) {
+                    return (nPos / 2) + ((i + 1) / 2) * (i % 2 ? -1 : 1);
+                } else {
+                    return i;
+                }
+            }();
+            const typename _Board::Position nextMovePosition = availableMovePositions[index];
+            const Move nextMove = Move{
                 .position = nextMovePosition,
                 .player = other(currentMove.player)
             };
-            int8_t score = - negamaxImpl(board, nextMove, depth - 1, -beta, -alpha);
+            const int8_t score = - negamaxImpl(board, nextMove, depth - 1, -beta, -alpha);
             if (score > bestScore) {
                 bestScore = score;
                 // bestMove = nextMove;
